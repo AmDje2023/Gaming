@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WARZONE MUSEUM</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+html{height:1000vh;}
+body{background:#07050a;font-family:'Rajdhani',sans-serif;overflow-x:hidden;}
+canvas{position:fixed;inset:0;z-index:0;}
+
+#loader{position:fixed;inset:0;z-index:900;background:#050304;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;
+  transition:opacity 1.5s;}
+#loader.gone{opacity:0;pointer-events:none;}
+.ld-logo{font-family:'Orbitron';font-weight:900;font-size:clamp(1.3rem,4vw,2.8rem);
+  letter-spacing:.4em;color:#f0c040;text-shadow:0 0 60px rgba(240,192,64,.9);animation:ldg 1s infinite alternate;}
+@keyframes ldg{from{text-shadow:0 0 30px rgba(240,192,64,.4);}to{text-shadow:0 0 80px #f0c040,0 0 150px rgba(255,80,0,.5);}}
+.ld-wrap{width:260px;height:2px;background:rgba(255,255,255,.06);}
+.ld-bar{height:100%;width:0;background:linear-gradient(90deg,#ff4400,#f0c040);box-shadow:0 0 12px #f0c040;transition:width .06s;}
+.ld-sub{font-family:'Share Tech Mono';font-size:.58rem;letter-spacing:.3em;color:rgba(240,192,64,.35);}
+
+#hud{position:fixed;inset:0;z-index:50;pointer-events:none;opacity:0;transition:opacity 1.2s;}
+#hud.on{opacity:1;}
+.ht{position:absolute;top:0;left:0;right:0;padding:1rem 1.8rem;
+  display:flex;justify-content:space-between;align-items:flex-start;
+  background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent);}
+.hs{font-family:'Share Tech Mono';font-size:.53rem;letter-spacing:.1em;color:rgba(240,192,64,.4);line-height:2.2;}
+.hsr{text-align:right;}
+.hcmp{font-family:'Share Tech Mono';font-size:.54rem;letter-spacing:.26em;
+  color:rgba(240,192,64,.22);border-bottom:1px solid rgba(240,192,64,.1);padding-bottom:.2rem;white-space:nowrap;}
+.hcmp b{color:#f0c040;}
+.hb{position:absolute;bottom:0;left:0;right:0;padding:.8rem 1.8rem 1.8rem;
+  display:flex;justify-content:space-between;align-items:flex-end;
+  background:linear-gradient(to top,rgba(0,0,0,.65),transparent);}
+.sh{font-family:'Share Tech Mono';font-size:.6rem;letter-spacing:.2em;color:rgba(240,192,64,.45);text-align:center;}
+.sh span{display:block;width:1px;height:36px;background:linear-gradient(to bottom,#f0c040,transparent);margin:.4rem auto 0;animation:sla 1.8s ease-in-out infinite;}
+@keyframes sla{0%,100%{opacity:1}50%{opacity:.1;transform:scaleY(.3) translateY(14px);}}
+.mm{width:84px;height:84px;position:relative;}
+.mm-bg{position:absolute;inset:0;border:1px solid rgba(240,192,64,.28);
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+  background:rgba(0,0,0,.72);}
+.mm-b{position:absolute;top:25%;left:28%;width:30px;height:24px;
+  border:1px solid rgba(240,192,64,.45);background:rgba(240,192,64,.04);}
+.mm-d{position:absolute;width:5px;height:5px;background:#f0c040;border-radius:50%;
+  box-shadow:0 0 8px #f0c040;transform:translate(-50%,-50%);}
+.mm-r{position:absolute;border:1px solid rgba(240,192,64,.28);border-radius:50%;
+  transform:translate(-50%,-50%);animation:mmr 2.6s ease-out infinite;}
+@keyframes mmr{0%{width:5px;height:5px;opacity:.7}100%{width:48px;height:48px;opacity:0}}
+
+#pgw{position:fixed;right:1.4rem;top:50%;transform:translateY(-50%);z-index:55;
+  display:flex;flex-direction:column;align-items:center;gap:.5rem;opacity:0;transition:opacity .6s;pointer-events:none;}
+#pgw.on{opacity:1;}
+.pg-lbl{font-family:'Share Tech Mono';font-size:.44rem;letter-spacing:.12em;color:rgba(240,192,64,.3);writing-mode:vertical-rl;}
+.pg-tr{width:2px;height:140px;background:rgba(240,192,64,.08);}
+.pg-fl{width:100%;height:0%;background:linear-gradient(to bottom,#ff4400,#f0c040);box-shadow:0 0 8px #f0c040;transition:height .08s;}
+/* Scroll section labels */
+.pg-dot{width:6px;height:6px;border-radius:50%;border:1px solid rgba(240,192,64,.3);background:transparent;position:relative;}
+.pg-dot.active{background:#f0c040;box-shadow:0 0 6px #f0c040;}
+
+#ipr{position:fixed;bottom:13%;left:50%;transform:translateX(-50%);
+  z-index:55;text-align:center;opacity:0;pointer-events:none;transition:opacity .3s;}
+#ipr.on{opacity:1;}
+.ipr-t{font-family:'Orbitron';font-size:.68rem;letter-spacing:.22em;color:#f0c040;animation:iprp 1.4s infinite;}
+@keyframes iprp{0%,100%{opacity:1}50%{opacity:.15}}
+.ipr-s{font-family:'Share Tech Mono';font-size:.5rem;letter-spacing:.18em;color:rgba(240,192,64,.35);margin-top:.3rem;}
+
+/* Section label that floats in */
+#section-label{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:55;text-align:center;opacity:0;pointer-events:none;transition:opacity .6s;
+}
+#section-label.on{opacity:1;}
+.sl-num{font-family:'Orbitron';font-size:5rem;font-weight:900;color:rgba(240,192,64,.06);letter-spacing:.1em;}
+.sl-txt{font-family:'Share Tech Mono';font-size:.6rem;letter-spacing:.4em;color:rgba(240,192,64,.4);margin-top:.5rem;}
+
+#vig{position:fixed;inset:0;z-index:10;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 28%,rgba(0,0,0,.72) 100%);}
+
+/* ENTRY ARTICLE */
+#entry-article{
+  position:fixed;inset:0;z-index:300;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .9s ease;
+}
+#entry-article.show{opacity:1;pointer-events:all;}
+.ea-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);}
+.ea-card{
+  position:relative;z-index:1;max-width:700px;width:88%;
+  background:rgba(7,5,0,.95);border:1px solid rgba(240,192,64,.25);
+  clip-path:polygon(22px 0,100% 0,100% calc(100% - 22px),calc(100% - 22px) 100%,0 100%,0 22px);
+  padding:2.8rem 3.2rem;
+  transform:translateY(28px) scale(.97);transition:transform .9s cubic-bezier(.16,1,.3,1),opacity .9s;
+}
+#entry-article.show .ea-card{transform:translateY(0) scale(1);}
+.ea-tag{font-family:'Share Tech Mono';font-size:.58rem;letter-spacing:.32em;color:#ff6a00;margin-bottom:1rem;}
+.ea-title{font-family:'Orbitron';font-weight:900;font-size:clamp(1.3rem,3.5vw,2.2rem);
+  color:#fff;line-height:1.05;margin-bottom:1rem;}
+.ea-title em{color:#f0c040;font-style:normal;}
+.ea-sep{width:55px;height:2px;background:linear-gradient(90deg,#ff6a00,#f0c040);margin-bottom:1.4rem;}
+.ea-body{font-size:.92rem;line-height:1.85;color:rgba(230,205,155,.6);font-weight:300;margin-bottom:1.8rem;}
+.ea-hint{font-family:'Share Tech Mono';font-size:.55rem;letter-spacing:.25em;color:rgba(240,192,64,.35);}
+.ea-close{position:absolute;top:1rem;right:1.4rem;font-family:'Share Tech Mono';font-size:.56rem;
+  letter-spacing:.15em;color:rgba(240,192,64,.4);background:none;border:none;cursor:pointer;transition:color .2s;}
+.ea-close:hover{color:#f0c040;}
+
+/* DETAIL PAGE */
+#page{position:fixed;inset:0;z-index:800;background:#050302;overflow-y:auto;
+  opacity:0;pointer-events:none;transform:translateY(20px);
+  transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1);}
+#page.open{opacity:1;pointer-events:all;transform:translateY(0);}
+.pg-nav{position:sticky;top:0;z-index:10;background:rgba(5,3,2,.93);
+  backdrop-filter:blur(16px);border-bottom:1px solid rgba(240,192,64,.1);
+  padding:.85rem 2rem;display:flex;justify-content:space-between;align-items:center;}
+.pg-back{font-family:'Orbitron';font-size:.6rem;letter-spacing:.18em;color:#f0c040;
+  border:1px solid rgba(240,192,64,.28);background:transparent;padding:.5rem 1.4rem;cursor:pointer;
+  clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);transition:all .25s;}
+.pg-back:hover{background:rgba(240,192,64,.1);}
+.pg-nav-tag{font-family:'Share Tech Mono';font-size:.5rem;letter-spacing:.22em;color:rgba(240,192,64,.3);}
+.pg-hero{position:relative;height:54vh;min-height:280px;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:2.8rem 4rem;overflow:hidden;}
+.pg-hero-bg{position:absolute;inset:0;transition:transform 7s ease;transform:scale(1.04);}
+#page.open .pg-hero-bg{transform:scale(1);}
+.pg-hero-ov{position:absolute;inset:0;background:linear-gradient(to top,#050302 0%,rgba(5,3,2,.3) 60%,transparent 100%);}
+.pg-htag{font-family:'Share Tech Mono';font-size:.56rem;letter-spacing:.28em;color:#ff6a00;margin-bottom:.7rem;position:relative;z-index:1;}
+.pg-h1{font-family:'Orbitron';font-weight:900;font-size:clamp(1.5rem,4.5vw,3rem);
+  color:#fff;line-height:1.05;position:relative;z-index:1;text-shadow:0 2px 20px rgba(0,0,0,.9);}
+.pg-h1 em{color:#f0c040;font-style:normal;}
+.pg-body{max-width:840px;margin:0 auto;padding:3rem 2rem 6rem;}
+.pg-lead{font-size:1.05rem;line-height:1.9;color:rgba(228,200,140,.55);font-weight:300;
+  margin-bottom:3rem;padding-left:1.4rem;border-left:3px solid rgba(240,192,64,.3);}
+.pg-st{font-family:'Orbitron';font-size:.85rem;font-weight:700;letter-spacing:.1em;
+  color:#f0c040;margin:3rem 0 1.2rem;display:flex;align-items:center;gap:1rem;}
+.pg-st::after{content:'';flex:1;height:1px;background:rgba(240,192,64,.1);}
+.pg-p{font-size:.9rem;line-height:1.9;color:rgba(228,200,140,.45);font-weight:300;margin-bottom:1.4rem;}
+.pg-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;margin:2.5rem 0;background:rgba(240,192,64,.05);}
+.pg-stt{background:#050302;padding:1.4rem 1.2rem;border:1px solid rgba(240,192,64,.09);}
+.pg-sn{font-family:'Orbitron';font-size:1.9rem;font-weight:900;color:#f0c040;line-height:1;}
+.pg-sl{font-family:'Share Tech Mono';font-size:.5rem;letter-spacing:.16em;color:rgba(240,192,64,.3);margin-top:.4rem;}
+.pg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;margin:1.8rem 0;background:rgba(240,192,64,.04);}
+.pg-card{background:#050302;padding:1.4rem;border:1px solid rgba(240,192,64,.06);
+  border-top:2px solid rgba(255,100,0,.4);transition:background .3s;}
+.pg-card:hover{background:rgba(255,80,0,.04);}
+.pg-ci{font-size:1.6rem;margin-bottom:.7rem;}
+.pg-ct{font-family:'Orbitron';font-size:.68rem;font-weight:700;letter-spacing:.08em;color:#e8c870;margin-bottom:.4rem;}
+.pg-cd{font-size:.78rem;color:rgba(228,200,140,.38);line-height:1.6;font-weight:300;}
+.pg-cta{margin-top:2.8rem;display:flex;gap:1rem;flex-wrap:wrap;}
+.pg-btn{font-family:'Orbitron';font-size:.6rem;letter-spacing:.16em;
+  padding:.85rem 2.2rem;border:none;cursor:pointer;
+  clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);transition:all .28s;}
+.pg-btn.p{background:linear-gradient(135deg,#cc3300,#f0c040);color:#000;font-weight:700;}
+.pg-btn.p:hover{box-shadow:0 12px 35px rgba(240,192,64,.25);transform:translateY(-2px);}
+.pg-btn.s{background:transparent;color:#f0c040;border:1px solid rgba(240,192,64,.3);}
+.pg-btn.s:hover{background:rgba(240,192,64,.07);}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="ld-logo">WARZONE MUSEUM</div>
+  <div class="ld-wrap"><div class="ld-bar" id="lbar"></div></div>
+  <div class="ld-sub" id="lmsg">GÉNÉRATION DU TERRAIN…</div>
+</div>
+
+<div id="hud">
+  <div class="ht">
+    <div class="hs"><div>ZONE : ERANGEL</div><div>PLAYER : ALPHA-1</div><div id="htime">--:--:--</div></div>
+    <div class="hcmp">N &nbsp; NE &nbsp; <b>E 090°</b> &nbsp; SE &nbsp; S &nbsp; SW &nbsp; W &nbsp; NW</div>
+    <div class="hs hsr"><div>ALIVE : 47</div><div>RANK : #1</div><div>ZONE : SAFE</div></div>
+  </div>
+  <div class="hb">
+    <div class="sh">SCROLL<span></span></div>
+    <div class="mm">
+      <div class="mm-bg"></div><div class="mm-b"></div>
+      <div class="mm-r" style="top:50%;left:50%;"></div>
+      <div class="mm-d" id="mmdot" style="top:92%;left:50%;"></div>
+    </div>
+  </div>
+</div>
+
+<div id="pgw">
+  <div class="pg-lbl">DEHORS</div>
+  <div class="pg-tr"><div class="pg-fl" id="pgfl"></div></div>
+  <div class="pg-lbl">DEDANS</div>
+</div>
+
+<div id="ipr"><div class="ipr-t">◈ VOIR L'ARTICLE</div><div class="ipr-s">[CLIC] POUR OUVRIR</div></div>
+<div id="section-label"><div class="sl-num" id="sl-num">01</div><div class="sl-txt" id="sl-txt">ARME · M416</div></div>
+<div id="vig"></div>
+
+<!-- ENTRY ARTICLE -->
+<div id="entry-article">
+  <div class="ea-backdrop" id="ea-bd"></div>
+  <div class="ea-card">
+    <button class="ea-close" id="ea-close">✕ FERMER</button>
+    <div class="ea-tag">// WARZONE MUSEUM — BIENVENUE</div>
+    <h2 class="ea-title">L'ARSENAL DES<br><em>LÉGENDES D'ERANGEL</em></h2>
+    <div class="ea-sep"></div>
+    <p class="ea-body">Vous venez de pénétrer dans le sanctuaire des armes, tactiques et légendes d'Erangel.<br><br>
+    Sur ces murs anciens reposent quatre artefacts emblématiques — chacun raconte une histoire de combat, de stratégie et de survie. Approchez les panneaux lumineux et cliquez pour accéder à l'article complet.</p>
+    <div class="ea-hint">↓ CONTINUEZ À SCROLLER POUR EXPLORER</div>
+  </div>
+</div>
+
+<!-- DETAIL PAGE -->
+<div id="page">
+  <div class="pg-nav">
+    <button class="pg-back" id="pg-back">← RETOUR AU MUSÉE</button>
+    <div class="pg-nav-tag" id="pg-nav-tag">// WARZONE MUSEUM</div>
+  </div>
+  <div class="pg-hero">
+    <div class="pg-hero-bg" id="pg-hero-bg"></div>
+    <div class="pg-hero-ov"></div>
+    <div class="pg-htag" id="pg-htag">// TAG</div>
+    <h1 class="pg-h1" id="pg-h1">TITRE</h1>
+  </div>
+  <div class="pg-body" id="pg-body"></div>
+</div>
+
+<canvas id="c"></canvas>
+
+<script type="module">
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+
+// ── ARTICLES DATA ─────────────────────────────────────────────────────────────
+const ARTS=[
+  {tag:'// ARME · ASSAULT',title:'M416 <em>ASSAULT RIFLE</em>',
+   short:'Le fusil d\'assaut le plus polyvalent d\'Erangel. Précision, cadence, domination.',
+   heroBg:'linear-gradient(160deg,#1a0600 0%,#3d1200 50%,#080402 100%)',accent:'#ff6a00',
+   stats:[{n:'43',l:'DÉGÂTS'},{n:'850',l:'RPM'},{n:'500m',l:'PORTÉE'},{n:'5.56',l:'CALIBRE'}],
+   intro:'Le M416 est un fusil d\'assaut à gaz calibre 5.56mm — l\'arme la plus fiable sur Erangel. Son système de rail modulaire accepte tous les accessoires existants. Entre les bonnes mains, il devient un instrument de domination absolue du champ de bataille.',
+   sections:[
+     {t:'CARACTÉRISTIQUES',p:'Mécanisme à piston court-recul. Canon 416mm, vélocité 920 m/s, trajectoire plate à 300m. La crosse repliable assure une mobilité maximale.',
+      cards:[{i:'🔭',t:'LUNETTE 4×',d:'Précision 100-400m.'},{i:'🔩',t:'COMPENSATEUR',d:'Recul -30%.'},{i:'📦',t:'CHARGEUR ×40',d:'40 coups sans recharger.'},{i:'🤝',t:'GRIP ANGULAIRE',d:'Stabilité +20%.'}]},
+     {t:'STRATÉGIE',p:'Full-auto proche, burst medium, lunette 6× loin. L\'arme universelle d\'Erangel. Deux headshots éliminent à travers un casque niveau 3.'}
+   ],cta:[{l:'VOIR LE LOADOUT',p:true},{l:'GUIDE VIDÉO',p:false}]},
+  {tag:'// CARTE · ERANGEL',title:'ERANGEL <em>MAP</em>',
+   short:'8km² en mer Noire. 100 guerriers. Une seule règle : survivre ou mourir.',
+   heroBg:'linear-gradient(160deg,#011020 0%,#022840 50%,#010508 100%)',accent:'#f0c040',
+   stats:[{n:'8km',l:'ÎLE'},{n:'100',l:'JOUEURS'},{n:'30m',l:'DURÉE'},{n:'6',l:'PHASES'}],
+   intro:'Erangel est une île de 8×8km en mer Noire, théâtre des batailles les plus légendaires. School, Pochinki, Military Base — chaque zone a forgé des légendes. Chaque coin de cette carte raconte une histoire de survie.',
+   sections:[
+     {t:'ZONES CLÉS',p:'Military Base : loot dense, joueurs agressifs. School : terrain de fraggers — courte durée de vie garantie. Pochinki contrôle les 4 routes principales.',
+      cards:[{i:'🏫',t:'SCHOOL',d:'Zone la plus mortelle.'},{i:'🏘️',t:'POCHINKI',d:'Carrefour stratégique.'},{i:'⚓',t:'MILITARY BASE',d:'Meilleur loot de la carte.'},{i:'🏥',t:'HOSPITAL',d:'Position haute, idéal sniper.'}]},
+     {t:'LA ZONE BLEUE',p:'1.2km de rayon → 100m en finale. 6 phases. 1 DPS phase 1, 10 DPS finale. Planifiez 2 phases à l\'avance. Un véhicule change tout.'}
+   ],cta:[{l:'CARTE COMPLÈTE',p:true},{l:'GUIDE ROTATIONS',p:false}]},
+  {tag:'// TACTIQUE · SQUAD',title:'FIRETEAM <em>PROTOCOL</em>',
+   short:'4 rôles. 1 mission. Aucun soldat ne gagne seul — coordonnez ou mourrez.',
+   heroBg:'linear-gradient(160deg,#001408 0%,#002a12 50%,#000802 100%)',accent:'#7fff00',
+   stats:[{n:'4',l:'MEMBRES'},{n:'∞',l:'REVIVES'},{n:'#1',l:'OBJECTIF'},{n:'100%',l:'COMMS'}],
+   intro:'Un squad de 4 rôles complémentaires forme une unité imparable. La communication est votre arme la plus puissante — le silence vous coûtera la vie sur Erangel.',
+   sections:[
+     {t:'LES 4 RÔLES',p:'Scout en avant, Tank absorbe, Medic soigne, Sniper couvre. Spécialisation définie avant de drop — improvisation = mort.',
+      cards:[{i:'🏹',t:'SCOUT',d:'Premier sur zone, mobilité max.'},{i:'🛡️',t:'TANK',d:'Absorbe les dégâts, priorité revive.'},{i:'💊',t:'MEDIC',d:'Revives stratégiques décisifs.'},{i:'👁️',t:'SNIPER',d:'Contrôle longue portée.'}]},
+     {t:'CERCLE FINAL',p:'Formation diamant : Tank avant, Scout flanc, Sniper arrière, Medic centre. Contrôler le centre géographique = 73% de victoires.'}
+   ],cta:[{l:'GUIDE SQUAD',p:true},{l:'FORMATIONS',p:false}]},
+  {tag:'// LORE · FINALE',title:'THE LAST <em>CIRCLE</em>',
+   short:'100 mètres. Aucune couverture. Un survivant. La légende commence ici.',
+   heroBg:'linear-gradient(160deg,#140000 0%,#380000 50%,#060000 100%)',accent:'#ff2040',
+   stats:[{n:'1',l:'SURVIVANT'},{n:'100m',l:'CERCLE FINAL'},{n:'10',l:'DPS ZONE'},{n:'∞',l:'LÉGENDE'}],
+   intro:'Quand le dernier cercle se ferme à 100 mètres, tout s\'arrête. Aucune couverture, aucune retraite. Un seul guerrier portera le titre du Chicken Dinner. La légende s\'écrit dans le sang du dernier survivant.',
+   sections:[
+     {t:'PSYCHOLOGIE',p:'Mental autant que physique. Ralentir sa perception sous stress extrême est la compétence clé des champions. Elle se forge nuit après nuit en solo-queue.',
+      cards:[{i:'🎯',t:'POSITION HAUTE',d:'Avantage × 2.'},{i:'💨',t:'SMOKE',d:'Repositionnement invisible.'},{i:'💊',t:'HEAL MOUVEMENT',d:'Ne jamais s\'arrêter.'},{i:'👂',t:'AUDIO RADAR',d:'Chaque son = info.'}]},
+     {t:'STATISTIQUES',p:'68% des victoires par joueurs en hauteur 3+ cercles. Agressifs (5+ kills) gagnent 2× plus que les campers. Méta optimale : agression calculée + repositionnement constant.'}
+   ],cta:[{l:'ANALYSE COMPLÈTE',p:true},{l:'HIGHLIGHTS',p:false}]},
+];
+
+// ── RENDERER ──────────────────────────────────────────────────────────────────
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.55;
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+
+// ── SCENE ─────────────────────────────────────────────────────────────────────
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x060408);
+scene.fog=new THREE.FogExp2(0x060408,.028);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,300);
+
+// ── PROCEDURAL STONE TEXTURE ──────────────────────────────────────────────────
+function makeStoneCanvas(w=256,h=256,base='#524438'){
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const cx=cv.getContext('2d');
+  cx.fillStyle=base;cx.fillRect(0,0,w,h);
+  // Stone blocks
+  const bw=42,bh=22;
+  cx.strokeStyle='rgba(0,0,0,0.45)';cx.lineWidth=1.5;
+  for(let row=0;row<h/bh+1;row++){
+    const offset=(row%2)*bw*.5;
+    for(let col=-1;col<w/bw+1;col++){
+      const x=col*bw+offset,y=row*bh;
+      cx.strokeRect(x+1,y+1,bw-2,bh-2);
+      // Slight color variation per block
+      const v=(Math.random()-.5)*20;
+      cx.fillStyle=`rgba(${v>0?v:0},${v>0?v*.5:0},0,0.12)`;
+      cx.fillRect(x+1,y+1,bw-2,bh-2);
+    }
+  }
+  // Noise
+  for(let i=0;i<w*h*.3;i++){
+    const px=Math.random()*w,py=Math.random()*h;
+    const a=Math.random()*.08;
+    const g=Math.random()>0.5?15:-15;
+    cx.fillStyle=`rgba(${128+g},${108+g},${88+g},${a})`;
+    cx.fillRect(px,py,2,2);
+  }
+  return cv;
+}
+function stoneTex(w,h,base){
+  const t=new THREE.CanvasTexture(makeStoneCanvas(w,h,base));
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,3);return t;
+}
+function makeFloorCanvas(){
+  const cv=document.createElement('canvas');cv.width=512;cv.height=512;
+  const cx=cv.getContext('2d');
+  cx.fillStyle='#1e1810';cx.fillRect(0,0,512,512);
+  const ts=64;
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const even=(r+c)%2===0;
+    cx.fillStyle=even?'#252018':'#1a1610';
+    cx.fillRect(c*ts+1,r*ts+1,ts-2,ts-2);
+    cx.fillStyle='rgba(0,0,0,0.3)';cx.fillRect(c*ts,r*ts,ts,1);cx.fillRect(c*ts,r*ts,1,ts);
+  }
+  const ft=new THREE.CanvasTexture(cv);ft.wrapS=ft.wrapT=THREE.RepeatWrapping;ft.repeat.set(6,6);return ft;
+}
+function makeCeilingCanvas(){
+  const cv=document.createElement('canvas');cv.width=256;cv.height=256;
+  const cx=cv.getContext('2d');
+  cx.fillStyle='#1a1510';cx.fillRect(0,0,256,256);
+  // Ribbed vault lines
+  cx.strokeStyle='rgba(80,60,40,0.5)';cx.lineWidth=3;
+  for(let i=0;i<256;i+=32){cx.beginPath();cx.moveTo(i,0);cx.lineTo(i,256);cx.stroke();}
+  for(let i=0;i<256;i+=32){cx.beginPath();cx.moveTo(0,i);cx.lineTo(256,i);cx.stroke();}
+  const ct=new THREE.CanvasTexture(cv);ct.wrapS=ct.wrapT=THREE.RepeatWrapping;ct.repeat.set(4,8);return ct;
+}
+
+const stTex=stoneTex(256,256,'#524438');
+const stTexD=stoneTex(256,256,'#3a3028');
+const flTex=makeFloorCanvas();
+const ceilTex=makeCeilingCanvas();
+
+const mStone =new THREE.MeshStandardMaterial({map:stTex, roughness:.88,metalness:.04,color:0xffffff});
+const mStoneD=new THREE.MeshStandardMaterial({map:stTexD,roughness:.92,metalness:.03,color:0xffffff});
+const mBat   =new THREE.MeshStandardMaterial({map:stoneTex(128,128,'#302820'),roughness:.9,color:0xffffff});
+const mFloor =new THREE.MeshStandardMaterial({map:flTex, roughness:.95,metalness:.02});
+const mCeil  =new THREE.MeshStandardMaterial({map:ceilTex,roughness:.92,metalness:.02});
+const mWood  =new THREE.MeshStandardMaterial({color:0x4a3020,roughness:.88,metalness:.04});
+const mIron  =new THREE.MeshStandardMaterial({color:0x252525,roughness:.55,metalness:.9});
+const mGold  =new THREE.MeshStandardMaterial({color:0xd4a020,roughness:.28,metalness:.92,emissive:0x3a1400,emissiveIntensity:.25});
+const mBark  =new THREE.MeshStandardMaterial({color:0x2a1e0e,roughness:.97});
+const mLeafA =new THREE.MeshStandardMaterial({color:0x1c2a0a,roughness:1,side:THREE.DoubleSide});
+const mLeafB =new THREE.MeshStandardMaterial({color:0x253412,roughness:1,side:THREE.DoubleSide,transparent:true,opacity:.85});
+const mEmber =new THREE.MeshStandardMaterial({color:0xff8800,emissive:0xff4400,emissiveIntensity:1,roughness:.4});
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function box(w,h,d,mat,x,y,z,ry=0){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  m.position.set(x,y,z);m.rotation.y=ry;m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
+}
+function cyl(rt,rb,h,seg,mat,x,y,z){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);
+  m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
+}
+function cone(r,h,seg,mat,x,y,z){
+  const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,seg),mat);
+  m.position.set(x,y,z);m.castShadow=true;scene.add(m);return m;
+}
+function sphere(r,seg,mat,x,y,z){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(r,seg,seg),mat);
+  m.position.set(x,y,z);scene.add(m);return m;
+}
+
+// ── GROUND ────────────────────────────────────────────────────────────────────
+const gndTex=stoneTex(512,512,'#181410');
+gndTex.repeat.set(16,16);
+const gnd=new THREE.Mesh(new THREE.PlaneGeometry(200,200,1,1),
+  new THREE.MeshStandardMaterial({map:gndTex,roughness:1,color:0xffffff}));
+gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;scene.add(gnd);
+
+// Road
+const roadTex=stoneTex(256,256,'#2a2418');roadTex.repeat.set(1,10);
+box(6,.08,48,new THREE.MeshStandardMaterial({map:roadTex,roughness:.95}),0,.04,18);
+// Road curbs
+for(let z=38;z>=-2;z-=2.8){
+  box(.5,.18,.5,mStone,-3.2,.09,z);box(.5,.18,.5,mStone,3.2,.09,z);
+}
+
+// ── GRAND ENTRANCE STAIRS ─────────────────────────────────────────────────────
+for(let s=0;s<7;s++){
+  box(8,.22,1.1,mStone,0,s*.22-.88,-(s*1.0)+3.8);
+}
+
+// ── CASTLE WALLS ──────────────────────────────────────────────────────────────
+// Front – split by gate opening
+box(6,13,2,mStone,-7,6.5,-4);
+box(6,13,2,mStone, 7,6.5,-4);
+box(5,3,2,mStone,0,11.5,-4);  // lintel
+
+// Side walls — thicker, more realistic
+box(2,13,30,mStone,-10,6.5,-19);
+box(2,13,30,mStone, 10,6.5,-19);
+
+// Back wall
+box(22,13,2,mStone,0,6.5,-34);
+
+// Interior floor
+const floorMesh=new THREE.Mesh(new THREE.BoxGeometry(18,.14,32),mFloor);
+floorMesh.position.set(0,.08,-19);floorMesh.receiveShadow=true;scene.add(floorMesh);
+
+// Ribbed ceiling
+const ceilMesh=new THREE.Mesh(new THREE.BoxGeometry(18,.22,32),mCeil);
+ceilMesh.position.set(0,13.1,-19);ceilMesh.receiveShadow=true;scene.add(ceilMesh);
+
+// Interior side stone ledge
+box(.4,1,30,mStoneD,-9.1,1.2,-19);
+box(.4,1,30,mStoneD, 9.1,1.2,-19);
+
+// ── BATTLEMENTS ───────────────────────────────────────────────────────────────
+function battlements(sx,ex,y,z,axis='x',spacing=1.9){
+  for(let v=sx;v<=ex;v+=spacing){
+    const cx2=axis==='x'?v:0, cz2=axis==='z'?v:z, cy=y;
+    if(axis==='x'&&Math.abs(v)<2.8)continue;
+    box(1.2,1.6,1.5,mBat,cx2,cy,cz2);
+  }
+}
+battlements(-10,10,14,-4,'x');
+battlements(-4,4,14,-4,'x',1.9);// fill top of lintel
+for(let z=-4;z>=-34;z-=1.9){
+  box(1.5,1.6,1.2,mBat,-10,14,z);
+  box(1.5,1.6,1.2,mBat, 10,14,z);
+}
+battlements(-10,10,14,-34,'x');
+
+// ── TOWERS ────────────────────────────────────────────────────────────────────
+function tower(x,z){
+  // Base
+  cyl(2.8,3.1,15,12,mStone,x,7.5,z);
+  // Machicolations (corbels)
+  for(let a=0;a<12;a++){
+    const ag=a/12*Math.PI*2;
+    const tx2=x+Math.cos(ag)*3.2,tz2=z+Math.sin(ag)*3.2;
+    box(.7,.5,.7,mStoneD,tx2,15.5,tz2);
+  }
+  // Battlements ring
+  for(let a=0;a<12;a++){
+    const ag=a/12*Math.PI*2;
+    box(.9,1.7,.9,mBat,x+Math.cos(ag)*3.1,16.55,z+Math.sin(ag)*3.1);
+  }
+  // Conical roof with texture
+  const roofMat=new THREE.MeshStandardMaterial({map:stoneTex(64,64,'#181408'),roughness:.9});
+  cone(3.1,6,12,roofMat,x,20,z);
+  // Arrow slits
+  for(let h=3;h<=12;h+=4){
+    box(.15,1.2,.22,mStoneD,x+3.12,h,z);
+    box(.15,1.2,.22,mStoneD,x-3.12,h,z);
+    box(.22,1.2,.15,mStoneD,x,h,z+3.12);
+    box(.22,1.2,.15,mStoneD,x,h,z-3.12);
+  }
+  // Floor disc
+  cyl(2.7,2.7,.1,12,mFloor,x,.08,z);
+}
+tower(-10,-4); tower(10,-4);
+tower(-10,-34); tower(10,-34);
+
+// Smaller turrets on wall corners
+function turret(x,z){
+  cyl(1.4,1.6,10,8,mStoneD,x,5,z);
+  for(let a=0;a<8;a++){
+    const ag=a/8*Math.PI*2;
+    box(.7,1.4,.7,mBat,x+Math.cos(ag)*1.65,10.7,z+Math.sin(ag)*1.65);
+  }
+  cone(1.6,3.5,8,new THREE.MeshStandardMaterial({color:0x141008,roughness:.9}),x,12.45,z);
+}
+turret(-10,-19); turret(10,-19);
+
+// ── GATE ARCH & DETAILS ───────────────────────────────────────────────────────
+// Portcullis frame
+box(.28,12,.28,mGold,-2.3,6,-3.6);
+box(.28,12,.28,mGold, 2.3,6,-3.6);
+box(5,.28,.28,mGold,0,12,-3.6);
+// Arch keystone blocks
+for(let a=-0.9;a<=0.9;a+=.22){
+  const ay=Math.sqrt(1-a*a)*1.4;
+  box(.2,.2,.22,mGold,a*2.3,12+ay,-3.5);
+}
+// Iron portcullis bars
+for(let i=-2;i<=2;i+=.72){box(.1,10,.1,mIron,i,6,-4);}
+box(.1,.1,4.2,mIron,0,11,-4);box(.1,.1,4.2,mIron,0,6,-4);
+// Hanging lanterns in gate
+function lantern(x,y,z){
+  // Chain
+  for(let c=0;c<4;c++)box(.04,.3,.04,mIron,x,y+.15+c*.3,z);
+  // Body
+  cyl(.22,.22,.7,6,mWood,x,y-.35,z);
+  const gl=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.5,6),
+    new THREE.MeshStandardMaterial({color:0xffcc44,emissive:0xff8800,emissiveIntensity:.9,transparent:true,opacity:.6}));
+  gl.position.set(x,y-.35,z);scene.add(gl);
+  // Point light
+  const pl=new THREE.PointLight(0xff9922,.8,5);pl.position.set(x,y-.35,z);scene.add(pl);
+  return pl;
+}
+lantern(-1.1,11.2,-3.2);lantern(1.1,11.2,-3.2);
+
+// ── INTERIOR COLUMNS (with detailed capitals) ─────────────────────────────────
+function column(x,z){
+  // Base plinth
+  box(1,.3,1,mGold,x,.15,z);
+  // Shaft
+  cyl(.45,.5,11,8,mStone,x,6,z);
+  // Capital
+  box(1.1,.5,1.1,mGold,x,11.25,z);
+  box(.95,.3,.95,mStoneD,x,11.65,z);
+  // Arch between columns (visual)
+  box(.12,4,.5,mStoneD,x+.4,9,z);
+  box(.12,4,.5,mStoneD,x-.4,9,z);
+}
+column(-4.5,-10); column(4.5,-10);
+column(-4.5,-20); column(4.5,-20);
+column(-4.5,-30); column(4.5,-30);
+
+// Wall niches / alcoves
+for(let z=-10;z>=-32;z-=10){
+  box(.4,3,2,mStoneD,-9.2,5.5,z);
+  box(.4,3,2,mStoneD, 9.2,5.5,z);
+  box(2,.4,2,mStoneD,-9.2,7.1,z);
+  box(2,.4,2,mStoneD, 9.2,7.1,z);
+}
+
+// Back altar
+box(6,.55,2.5,mStoneD,0,.28,-33.5);
+box(5,6,.4,mStoneD,0,3.2,-33.85);
+box(6.2,.2,2.5,mGold,0,.6,-33.5);
+box(1.8,1.8,.3,new THREE.MeshStandardMaterial({color:0xd4a020,emissive:0x774400,emissiveIntensity:.7}),0,4.2,-33.7);
+
+// Ribbed vault arches (visual ceiling ribs)
+for(let z=-6;z>=-33;z-=8){
+  box(18.4,.3,.3,mGold,0,13.2,z);
+  box(.3,.3,18,mStoneD,-9.2,13.2,-19);
+  box(.3,.3,18,mStoneD, 9.2,13.2,-19);
+}
+
+// ── INTERIOR STAIRS (both sides) ──────────────────────────────────────────────
+for(let s=0;s<6;s++){
+  box(3,.24,.95,mStone,-7.2,s*.24+.12,-(s*1.0)-7);
+  box(3,.24,.95,mStone, 7.2,s*.24+.12,-(s*1.0)-7);
+}
+
+// ── TREES ─────────────────────────────────────────────────────────────────────
+function tree(x,z,h=7,r=2,variant=0){
+  cyl(.22,.28,h,7,mBark,x,h/2,z);
+  const leafMat=variant%2===0?mLeafA:mLeafB;
+  cone(r,h*.55,9,leafMat,x,h+r*.4,z);
+  cone(r*.75,h*.5,9,mLeafA,x,h+r*.85,z);
+  cone(r*.5,h*.4,9,leafMat,x,h+r*1.3,z);
+}
+// Path-flanking trees
+[-8,8].forEach(sx=>{[28,22,15,8].forEach(sz=>tree(sx,sz,6+Math.random(),1.8+Math.random()*.5));});
+// Clusters around towers
+[[-14,0],[-17,6],[-13,10],[14,0],[17,6],[13,10]].forEach(([tx,tz])=>tree(tx,tz,8+Math.random()*2,2.2+Math.random()));
+[[-16,-15],[-20,-20],[-15,-28],[16,-15],[20,-20],[15,-28]].forEach(([tx,tz])=>tree(tx,tz,7+Math.random()*3,2+Math.random()));
+// Dense forest behind
+[[-8,-40],[-14,-38],[0,-42],[8,-40],[14,-38],[-5,-36],[5,-36]].forEach(([tx,tz])=>tree(tx,tz,9+Math.random()*3,2.5+Math.random()));
+
+// ── TORCH STANDS OUTSIDE ──────────────────────────────────────────────────────
+function torchStandExternal(x,z){
+  cyl(.09,.12,4,6,mIron,x,2,z);
+  box(.55,.08,.55,mGold,x,4.12,z);
+  // Bracket
+  box(.55,.08,.12,mIron,x,3.9,z+.3);
+}
+torchStandExternal(-4,24);torchStandExternal(4,24);
+torchStandExternal(-4,14);torchStandExternal(4,14);
+
+// ── TORCHES & FIRES ───────────────────────────────────────────────────────────
+const torchLights=[];
+const flameList=[];
+
+function addTorch(x,y,z,big=false){
+  const sc=big?1.3:1;
+  cyl(.12,.15,.9*sc,6,mWood,x,y+.45*sc,z);
+  cyl(.22,.16,.38*sc,8,mWood,x,y+.95*sc,z);
+  // Ember bowl
+  const bowl=new THREE.Mesh(new THREE.CylinderGeometry(.24,.14,.22,8,1,true),
+    new THREE.MeshStandardMaterial({color:0x3a2410,roughness:.8,side:THREE.DoubleSide}));
+  bowl.position.set(x,y+1.04*sc,z);scene.add(bowl);
+  // Emissive ember top
+  const top=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,.06,8),mEmber);
+  top.position.set(x,y+1.14*sc,z);scene.add(top);
+
+  const py=y+1.2*sc;
+  const pl=new THREE.PointLight(0xff7700,big?4.5:3.2,big?14:9);
+  pl.position.set(x,py,z);pl.castShadow=!big; // only small torches shadow for perf
+  scene.add(pl);
+  torchLights.push({pl,bx:x,by:py,bz:z,ph:Math.random()*Math.PI*2,big});
+  flameList.push([x,py,z,big?1.3:.9]);
+}
+
+// Exterior gate torches (big)
+addTorch(-2.6,4.5,-3.4,true);addTorch(2.6,4.5,-3.4,true);
+// Path stands
+[[- 4,4.15,24],[4,4.15,24],[-4,4.15,14],[4,4.15,14]].forEach(([x,y,z])=>addTorch(x,y,z,false));
+// Interior wall sconces
+[[-9.0,5.5,-10],[9.0,5.5,-10],[-9.0,5.5,-16],[9.0,5.5,-16],
+ [-9.0,5.5,-22],[9.0,5.5,-22],[-9.0,5.5,-28],[9.0,5.5,-28]].forEach(([x,y,z])=>addTorch(x,y,z));
+
+// ── FLAME PARTICLES ───────────────────────────────────────────────────────────
+const flameSystems=[];
+function makeFlameSystem(px,py,pz,sc=1){
+  const N=Math.round(26*sc);
+  const p1=new Float32Array(N*3),p2=new Float32Array(N*3);
+  for(let i=0;i<N;i++){p1[i*3]=px;p1[i*3+1]=py;p1[i*3+2]=pz;p2[i*3]=px;p2[i*3+1]=py;p2[i*3+2]=pz;}
+  const g1=new THREE.BufferGeometry();g1.setAttribute('position',new THREE.BufferAttribute(p1,3));
+  const g2=new THREE.BufferGeometry();g2.setAttribute('position',new THREE.BufferAttribute(p2,3));
+  const m1=new THREE.PointsMaterial({color:0xff5500,size:.28*sc,transparent:true,opacity:.88,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+  const m2=new THREE.PointsMaterial({color:0xffdd00,size:.13*sc,transparent:true,opacity:.82,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+  const pts1=new THREE.Points(g1,m1),pts2=new THREE.Points(g2,m2);
+  scene.add(pts1);scene.add(pts2);
+  const lives=Array.from({length:N},()=>Math.random());
+  const maxL=Array.from({length:N},()=>.28+Math.random()*.42);
+  const vels=Array.from({length:N},()=>({x:(Math.random()-.5)*.016*sc,y:(.022+Math.random()*.026)*sc,z:(Math.random()-.5)*.016*sc}));
+  return{p1,p2,g1,g2,lives,maxL,vels,N,px,py,pz};
+}
+// NOTE: brazier flames from panels will be added after SLOTS loop — see below
+// build torch flames now (path torches & wall sconces)
+flameList.forEach(([px,py,pz,sc])=>flameSystems.push(makeFlameSystem(px,py,pz,sc)));
+
+function updateFlames(dt){
+  flameSystems.forEach(f=>{
+    for(let i=0;i<f.N;i++){
+      f.lives[i]+=dt*2.4;
+      if(f.lives[i]>=f.maxL[i]){
+        f.lives[i]=0;
+        f.p1[i*3]=f.px+(Math.random()-.5)*.16;f.p1[i*3+1]=f.py;f.p1[i*3+2]=f.pz+(Math.random()-.5)*.16;
+        f.p2[i*3]=f.p1[i*3];f.p2[i*3+1]=f.p1[i*3+1];f.p2[i*3+2]=f.p1[i*3+2];
+      }else{
+        f.p1[i*3]+=f.vels[i].x;f.p1[i*3+1]+=f.vels[i].y;f.p1[i*3+2]+=f.vels[i].z;
+        f.p2[i*3]=f.p1[i*3];f.p2[i*3+1]=f.p1[i*3+1];f.p2[i*3+2]=f.p1[i*3+2];
+      }
+    }
+    f.g1.attributes.position.needsUpdate=true;
+    f.g2.attributes.position.needsUpdate=true;
+  });
+}
+
+// ── PANEL SLOTS & TEXTURES ────────────────────────────────────────────────────
+const SLOTS=[
+  {x:-8.9,y:5.0,z:-12, ry:Math.PI/2,  art:ARTS[0]},
+  {x: 8.9,y:5.0,z:-12, ry:-Math.PI/2, art:ARTS[1]},
+  {x:-8.9,y:5.0,z:-26, ry:Math.PI/2,  art:ARTS[2]},
+  {x: 8.9,y:5.0,z:-26, ry:-Math.PI/2, art:ARTS[3]},
+];
+
+function makePanelTex(art){
+  const cv=document.createElement('canvas');cv.width=640;cv.height=480;
+  const cx=cv.getContext('2d');
+  // Base
+  const bg=cx.createLinearGradient(0,0,0,480);bg.addColorStop(0,'#0d0a06');bg.addColorStop(1,'#060408');
+  cx.fillStyle=bg;cx.fillRect(0,0,640,480);
+  // Vignette
+  const vg=cx.createRadialGradient(320,240,80,320,240,380);
+  vg.addColorStop(0,'transparent');vg.addColorStop(1,'rgba(0,0,0,0.5)');
+  cx.fillStyle=vg;cx.fillRect(0,0,640,480);
+  // Accent border
+  cx.strokeStyle=art.accent;cx.lineWidth=2;cx.globalAlpha=.55;cx.strokeRect(7,7,626,466);
+  cx.globalAlpha=.1;cx.strokeRect(18,18,604,444);cx.globalAlpha=1;
+  // Gold corner brackets
+  cx.fillStyle=art.accent;cx.globalAlpha=.9;
+  [[10,10],[628,10],[10,468],[628,468]].forEach(([bx,by])=>{
+    cx.fillRect(bx-14,by-1.5,28,3);cx.fillRect(bx-1.5,by-14,3,28);
+  });cx.globalAlpha=1;
+  // Tag
+  cx.fillStyle=art.accent;cx.font="bold 15px 'Courier New'";cx.fillText(art.tag,28,46);
+  // Title
+  cx.fillStyle='#fff';cx.font="bold 32px Arial";cx.fillText(art.title.replace(/<[^>]+>/g,' '),28,88);
+  // Separator
+  cx.fillStyle=art.accent;cx.globalAlpha=.55;cx.fillRect(28,104,100,2);cx.globalAlpha=1;
+  // Short
+  cx.fillStyle='rgba(228,200,150,.75)';cx.font="19px Arial";
+  let line='',y=134;
+  art.short.split(' ').forEach(w=>{const t=line+w+' ';if(cx.measureText(t).width>590&&line){cx.fillText(line,28,y);line=w+' ';y+=27;}else line=t;});
+  cx.fillText(line,28,y);
+  // Stats
+  art.stats.forEach((s,i)=>{
+    const sx=28+i*151;
+    cx.fillStyle=art.accent;cx.globalAlpha=.13;cx.fillRect(sx,302,143,76);cx.globalAlpha=1;
+    cx.fillStyle=art.accent;cx.font="bold 27px Arial";cx.fillText(s.n,sx+10,334);
+    cx.fillStyle='rgba(228,200,150,.48)';cx.font="11px 'Courier New'";cx.fillText(s.l,sx+10,353);
+  });
+  // CTA
+  cx.fillStyle=art.accent;cx.globalAlpha=.6;cx.font="12px 'Courier New'";
+  cx.fillText('[ CLIQUER POUR LIRE L\'ARTICLE ]',28,444);
+  cx.globalAlpha=.22;cx.fillRect(28,456,584,1);cx.globalAlpha=1;
+  return new THREE.CanvasTexture(cv);
+}
+
+const panelMeshes=[];
+SLOTS.forEach(sl=>{
+  const art=sl.art;
+  // offset so the panel sits flush against the wall face
+  const wallOff=sl.ry>0?.09:-.09;
+
+  // ── SIMPLE CLEAN FRAME ─────────────────────────────────────────
+  // Four gold border bars around the canvas
+  const fW=4.0, fH=3.4, bT=0.14; // frame width, height, bar thickness
+  const fMat=new THREE.MeshStandardMaterial({color:0xc8900a,roughness:.3,metalness:.92,emissive:0x3a1400,emissiveIntensity:.25});
+  // top bar
+  box(fW+bT*2, bT, bT, fMat, sl.x+wallOff, sl.y+fH/2+bT/2, sl.z);
+  // bottom bar
+  box(fW+bT*2, bT, bT, fMat, sl.x+wallOff, sl.y-fH/2-bT/2, sl.z);
+  // left bar
+  box(bT, fH, bT, fMat, sl.x+wallOff, sl.y, sl.z-(fW/2+bT/2));
+  // right bar
+  box(bT, fH, bT, fMat, sl.x+wallOff, sl.y, sl.z+(fW/2+bT/2));
+  // corner squares
+  [[sl.z-(fW/2+bT/2), sl.y+fH/2+bT/2],
+   [sl.z+(fW/2+bT/2), sl.y+fH/2+bT/2],
+   [sl.z-(fW/2+bT/2), sl.y-fH/2-bT/2],
+   [sl.z+(fW/2+bT/2), sl.y-fH/2-bT/2]].forEach(([cz,cy])=>{
+    box(bT*1.6,bT*1.6,bT*1.6,fMat,sl.x+wallOff,cy,cz);
+  });
+
+  // Canvas plane (the painting)
+  const tex=makePanelTex(art);
+  const cvM=new THREE.Mesh(new THREE.PlaneGeometry(fW,fH),
+    new THREE.MeshStandardMaterial({map:tex,roughness:.75,transparent:true,opacity:0}));
+  cvM.position.set(sl.x+wallOff*1.5, sl.y, sl.z);
+  cvM.rotation.y=sl.ry;
+  scene.add(cvM);
+
+  // Soft spot on the canvas
+  const spot=new THREE.SpotLight(0xffd090, 1.2, 14, Math.PI/6, .6, 1.2);
+  spot.position.set(sl.x+(sl.ry>0?4:-4), sl.y+3.5, sl.z);
+  spot.target.position.set(sl.x, sl.y, sl.z);
+  scene.add(spot); scene.add(spot.target);
+
+  const ptl=new THREE.PointLight(0xffaa44,.4,6);
+  ptl.position.set(sl.x+wallOff*2, sl.y, sl.z);
+  scene.add(ptl);
+
+  // ── FIRE BRAZIERS on each side of the frame ─────────────────────
+  // Brazier positions: left side (z-2.4) and right side (z+2.4) of frame
+  // pulled slightly away from wall
+  const brazierOff = sl.ry>0 ? 1.2 : -1.2; // pull away from wall
+  [sl.z-2.4, sl.z+2.4].forEach(bz=>{
+    const bx=sl.x+brazierOff;
+    // Pedestal
+    cyl(.18,.22,1.4,8,mStoneD,bx,.7,bz);
+    // Bowl base
+    cyl(.32,.22,.2,8,mIron,bx,1.4,bz);
+    // Bowl cup (open top)
+    const bowlMat=new THREE.MeshStandardMaterial({color:0x2a1a08,roughness:.7,metalness:.4,side:THREE.DoubleSide});
+    const bowl=new THREE.Mesh(new THREE.CylinderGeometry(.3,.2,.28,8,1,true),bowlMat);
+    bowl.position.set(bx,1.54,bz); scene.add(bowl);
+    // Glowing ember top
+    const ember=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.06,8),mEmber);
+    ember.position.set(bx,1.68,bz); scene.add(ember);
+    // Flame point light
+    const fpl=new THREE.PointLight(0xff7700,2.6,8);
+    fpl.position.set(bx,2.1,bz); scene.add(fpl);
+    torchLights.push({pl:fpl,bx,by:2.1,bz,ph:Math.random()*Math.PI*2});
+    // Flame particles
+    flameList.push([bx,2.1,bz,.85]);
+  });
+
+  panelMeshes.push({mesh:cvM,spot,ptl,art:sl.art,sl,opacity:0});
+});
+
+// Brazier flames were appended to flameList inside SLOTS loop — spawn them now
+// (flameList grew during SLOTS, so just re-run for any entries not yet in flameSystems)
+while(flameSystems.length < flameList.length){
+  const [px,py,pz,sc]=flameList[flameSystems.length];
+  flameSystems.push(makeFlameSystem(px,py,pz,sc));
+}
+
+// ── LIGHTING ──────────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0xffd090,.55));
+
+// Moon
+const moon=new THREE.DirectionalLight(0x9aa8cc,.45);
+moon.position.set(-18,38,22);moon.castShadow=true;
+moon.shadow.mapSize.set(2048,2048);moon.shadow.camera.near=1;moon.shadow.camera.far=120;
+moon.shadow.camera.left=-60;moon.shadow.camera.right=60;
+moon.shadow.camera.top=60;moon.shadow.camera.bottom=-60;
+scene.add(moon);
+
+// Warm interior fill
+const intL=new THREE.PointLight(0xff8833,1.1,50);intL.position.set(0,8,-19);scene.add(intL);
+const gateL=new THREE.PointLight(0xff9944,.9,22);gateL.position.set(0,6,1);scene.add(gateL);
+const pathL=new THREE.PointLight(0xff7733,.6,20);pathL.position.set(0,4,18);scene.add(pathL);
+
+// ── STARS + MOON SPHERE ───────────────────────────────────────────────────────
+const sGeo=new THREE.BufferGeometry();
+const sArr=new Float32Array(1600*3);
+for(let i=0;i<4800;i+=3){sArr[i]=(Math.random()-.5)*280;sArr[i+1]=15+Math.random()*85;sArr[i+2]=(Math.random()-.5)*280;}
+sGeo.setAttribute('position',new THREE.BufferAttribute(sArr,3));
+scene.add(new THREE.Points(sGeo,new THREE.PointsMaterial({color:0xfff4e0,size:.14,transparent:true,opacity:.65})));
+sphere(.9,12,new THREE.MeshStandardMaterial({color:0xffe8c0,emissive:0xddaa66,emissiveIntensity:.7}),-45,60,-90);
+
+// ── SCROLL ────────────────────────────────────────────────────────────────────
+let scrollT=0;
+window.addEventListener('scroll',()=>{
+  scrollT=Math.max(0,Math.min(1,scrollY/(document.documentElement.scrollHeight-innerHeight)));
+  document.getElementById('pgfl').style.height=(scrollT*100)+'%';
+  const d=document.getElementById('mmdot');
+  d.style.top=(92-scrollT*75)+'%';
+},{passive:true});
+
+// ── CAMERA PATH ───────────────────────────────────────────────────────────────
+// The path is built as keyframes with position AND lookAt target per segment.
+// Between panels the camera tilts UP to ceiling (cinematic transition).
+//
+// Segments:
+//  0.00–0.10 : far outside approaching
+//  0.10–0.22 : near approach to gate
+//  0.22–0.32 : passing through gate
+//  0.32–0.40 : just inside – entry article shown
+//  0.40–0.50 : move toward panel 1 (left) – look straight at it
+//  0.50–0.60 : CEILING TRANSITION (look up, move toward panel 2)
+//  0.60–0.70 : look straight at panel 2 (right)
+//  0.70–0.78 : CEILING TRANSITION
+//  0.78–0.87 : look straight at panel 3 (left)
+//  0.87–0.94 : CEILING TRANSITION
+//  0.94–1.00 : look straight at panel 4 (right) → final overview
+
+// We'll build explicit keyframes for position and lookAt
+// then lerp between them based on scrollT
+// Camera stays at eye-level (y≈1.9) at all times — no ceiling shots
+const KF=[
+  // t,   camX, camY, camZ,   lookX, lookY, lookZ
+  [0.00,   0,  3.5,  46,     0,  2.5,  20],   // far outside
+  [0.08,   0,  2.8,  32,     0,  2.2,  10],   // approaching
+  [0.16,   0,  2.4,  20,     0,  2.0,   4],   // near
+  [0.24,   0,  2.2,  10,     0,  2.0,  -3],   // gate approach
+  [0.30,   0,  2.0,   4,     0,  1.9,  -8],   // at gate
+  [0.38,   0,  1.9,  -2,     0,  1.9, -10],   // inside gate
+  [0.44,   0,  1.9,  -8,     0,  1.9, -14],   // entry article
+  // ── Panel 1 : gauche
+  [0.50,  -3.5, 1.9, -12,  -8.9, 5.0, -12],
+  // ── Transition 1→2 : centre, regarde droit devant
+  [0.57,   0,   1.9, -12,   0,   1.9, -20],
+  // ── Panel 2 : droite
+  [0.64,   3.5, 1.9, -12,   8.9, 5.0, -12],
+  // ── Transition 2→3 : avance vers le fond
+  [0.71,   0,   1.9, -19,   0,   1.9, -26],
+  // ── Panel 3 : gauche fond
+  [0.79,  -3.5, 1.9, -26,  -8.9, 5.0, -26],
+  // ── Transition 3→4 : EXACTEMENT comme 1→2 — centre, regarde droit devant
+  [0.86,   0,   1.9, -26,   0,   1.9, -34],
+  // ── Panel 4 : droite fond
+  [0.93,   3.5, 1.9, -26,   8.9, 5.0, -26],
+  // ── Final
+  [1.00,   0,   2.2, -18,   0,   3.0, -26],
+];
+
+function getKF(t){
+  t=Math.max(0,Math.min(1,t));
+  let i=0;
+  for(let k=0;k<KF.length-1;k++){
+    if(t>=KF[k][0]&&t<=KF[k+1][0]){i=k;break;}
+  }
+  const a=KF[i], b=KF[Math.min(i+1,KF.length-1)];
+  const span=b[0]-a[0];
+  const ss=span<0.0001?1:((t-a[0])/span);
+  const sm=ss*ss*(3-2*ss); // smoothstep
+  return{
+    pos: new THREE.Vector3(
+      a[1]+(b[1]-a[1])*sm,
+      a[2]+(b[2]-a[2])*sm,
+      a[3]+(b[3]-a[3])*sm
+    ),
+    look: new THREE.Vector3(
+      a[4]+(b[4]-a[4])*sm,
+      a[5]+(b[5]-a[5])*sm,
+      a[6]+(b[6]-a[6])*sm
+    ),
+  };
+}
+
+// ── ENTRY ARTICLE ─────────────────────────────────────────────────────────────
+let entryShown=false;
+document.getElementById('ea-close').addEventListener('click',()=>document.getElementById('entry-article').classList.remove('show'));
+document.getElementById('ea-bd').addEventListener('click',()=>document.getElementById('entry-article').classList.remove('show'));
+
+// ── DETAIL PAGE ───────────────────────────────────────────────────────────────
+function openPage(art){
+  document.getElementById('pg-htag').textContent=art.tag;
+  document.getElementById('pg-h1').innerHTML=art.title;
+  document.getElementById('pg-nav-tag').textContent=art.tag;
+  document.getElementById('pg-hero-bg').style.background=art.heroBg;
+  let h=`<p class="pg-lead">${art.intro}</p>`;
+  h+=`<div class="pg-stats">${art.stats.map(s=>`<div class="pg-stt"><div class="pg-sn" style="color:${art.accent}">${s.n}</div><div class="pg-sl">${s.l}</div></div>`).join('')}</div>`;
+  art.sections.forEach(sec=>{
+    h+=`<h2 class="pg-st" style="color:${art.accent}">${sec.t}</h2><p class="pg-p">${sec.p}</p>`;
+    if(sec.cards)h+=`<div class="pg-grid">${sec.cards.map(c=>`<div class="pg-card" style="border-top-color:${art.accent}55"><div class="pg-ci">${c.i}</div><div class="pg-ct">${c.t}</div><div class="pg-cd">${c.d}</div></div>`).join('')}</div>`;
+  });
+  h+=`<div class="pg-cta">${art.cta.map(b=>`<button class="pg-btn ${b.p?'p':'s'}" ${b.p?`style="background:linear-gradient(135deg,#cc2200,${art.accent});color:#000;"`:``}>${b.l}</button>`).join('')}</div>`;
+  document.getElementById('pg-body').innerHTML=h;
+  document.getElementById('page').classList.add('open');
+  document.getElementById('page').scrollTop=0;
+}
+document.getElementById('pg-back').addEventListener('click',()=>document.getElementById('page').classList.remove('open'));
+
+// ── RAYCASTER ─────────────────────────────────────────────────────────────────
+const ray=new THREE.Raycaster();
+const c2=new THREE.Vector2(0,0);
+canvas.addEventListener('click',()=>{
+  if(document.getElementById('page').classList.contains('open'))return;
+  if(document.getElementById('entry-article').classList.contains('show'))return;
+  ray.setFromCamera(c2,camera);
+  const hits=ray.intersectObjects(panelMeshes.map(p=>p.mesh));
+  if(hits.length&&hits[0].distance<10){
+    const idx=panelMeshes.findIndex(p=>p.mesh===hits[0].object);
+    if(panelMeshes[idx].opacity>.4)openPage(panelMeshes[idx].art);
+  }
+});
+
+// ── HUD TIME ──────────────────────────────────────────────────────────────────
+setInterval(()=>{const n=new Date();document.getElementById('htime').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');},1000);
+
+// ── LOADER ────────────────────────────────────────────────────────────────────
+const msgs=['GÉNÉRATION DU TERRAIN…','CONSTRUCTION DU CHÂTEAU…','PLANTATION DES ARBRES…','ALLUMAGE DES FLAMMES…','CHARGEMENT DES ARTEFACTS…','PRÊT'];
+let pct=0;
+const li=setInterval(()=>{
+  pct+=1.0;document.getElementById('lbar').style.width=pct+'%';
+  document.getElementById('lmsg').textContent=msgs[Math.min(Math.floor(pct/18),5)];
+  if(pct>=100){clearInterval(li);setTimeout(()=>{document.getElementById('loader').classList.add('gone');document.getElementById('hud').classList.add('on');document.getElementById('pgw').classList.add('on');setTimeout(()=>document.getElementById('loader').remove(),1600);},600);}
+},28);
+
+// ── ANIMATE ───────────────────────────────────────────────────────────────────
+const clock=new THREE.Clock();
+let smoothT=0;
+
+// Section labels
+const SEC_LABELS=[
+  {t:.50,n:'01',txt:'ARME · M416'},
+  {t:.66,n:'02',txt:'CARTE · ERANGEL'},
+  {t:.82,n:'03',txt:'TACTIQUE · SQUAD'},
+  {t:.96,n:'04',txt:'LORE · FINALE'},
+];
+let lastLabel=-1;
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=clock.getDelta();
+  const et=clock.getElapsedTime();
+
+  // Smooth scroll
+  smoothT+=(scrollT-smoothT)*.05;
+  const t=Math.max(0,Math.min(1,smoothT));
+
+  // Camera from keyframes
+  const{pos,look}=getKF(t);
+  camera.position.copy(pos);
+  camera.lookAt(look);
+
+  // Entry article at ~38%
+  if(!entryShown&&t>.36){entryShown=true;document.getElementById('entry-article').classList.add('show');}
+
+  // Section label flash
+  let activeLabel=-1;
+  SEC_LABELS.forEach((sl,i)=>{if(t>sl.t-.04&&t<sl.t+.08)activeLabel=i;});
+  if(activeLabel!==lastLabel){
+    lastLabel=activeLabel;
+    const el=document.getElementById('section-label');
+    if(activeLabel>=0){
+      document.getElementById('sl-num').textContent=SEC_LABELS[activeLabel].n;
+      document.getElementById('sl-txt').textContent=SEC_LABELS[activeLabel].txt;
+      el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2000);
+    }
+  }
+
+  // Panel fade-in by distance
+  panelMeshes.forEach(p=>{
+    const dist=camera.position.distanceTo(new THREE.Vector3(p.sl.x,p.sl.y,p.sl.z));
+    const target=dist<10?1:0;
+    p.opacity+=(target-p.opacity)*.04;
+    p.mesh.material.opacity=p.opacity;
+    p.spot.intensity=1.1*p.opacity;
+    p.ptl.intensity=.5*p.opacity;
+  });
+
+  // Torch + brazier flicker (all entries in torchLights)
+  torchLights.forEach(({pl,bx,by,bz,ph,big})=>{
+    const base = big ? 4.5 : 2.8;
+    const f=.78+.22*Math.sin(et*9+ph)+.12*Math.sin(et*17+ph*1.8);
+    pl.intensity=base*f;
+    pl.position.set(bx+Math.sin(et*7+ph)*.05,by+Math.sin(et*11+ph)*.035,bz);
+  });
+
+  // Interior pulse
+  intL.intensity=1.1+.18*Math.sin(et*.85);
+  gateL.intensity=.9+.15*Math.sin(et*1.1+.4);
+
+  updateFlames(dt);
+
+  // Interact prompt
+  if(!document.getElementById('page').classList.contains('open')&&!document.getElementById('entry-article').classList.contains('show')){
+    ray.setFromCamera(c2,camera);
+    const hits=ray.intersectObjects(panelMeshes.map(p=>p.mesh));
+    const near=hits.length&&hits[0].distance<10&&panelMeshes[panelMeshes.findIndex(p=>p.mesh===hits[0].object)]?.opacity>.4;
+    document.getElementById('ipr').classList.toggle('on',!!near);
+  }
+
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>
