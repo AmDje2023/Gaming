@@ -704,7 +704,7 @@ function buildHuman() {
     avatarRoot.add(hand);
 
     // Thumb
-    const thG = new THREE.CapsuleGeometry ? new THREE.SphereGeometry(0.014, 8, 6) : new THREE.SphereGeometry(0.014, 8, 6);
+    const thG = new THREE.SphereGeometry(0.014, 8, 6);
     thG.scale(0.7, 1.4, 0.7);
     const th = new THREE.Mesh(thG, glovM);
     th.position.set(s*(0.298+0.038), 0.70, 0.04);
